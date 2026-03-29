@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — DHRSS{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-1"><i class="fa-solid fa-user-shield text-purple me-2"></i>Admin Dashboard</h2>
+<p class="text-muted mb-4">Register doctors, emergency personnel, and audit emergency access logs.</p>
+
+<div class="row g-4">
+
+  <!-- Register Doctor -->
+  <div class="col-md-6">
+    <div class="card p-4 h-100">
+      <h5 class="fw-bold mb-3"><i class="fa-solid fa-user-doctor me-2 text-primary"></i>Register Doctor</h5>
+      <div class="mb-2">
+        <label class="form-label">Doctor Wallet Address</label>
+        <input type="text" class="form-control" id="doc-address" placeholder="0x..." />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Admin Wallet Address</label>
+        <input type="text" class="form-control" id="doc-admin" placeholder="0x..." />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Admin Private Key <span class="badge bg-warning text-dark">never stored</span></label>
+        <input type="password" class="form-control" id="doc-key" placeholder="0x..." />
+      </div>
+      <button class="btn btn-primary" onclick="registerDoctor()">
+        <i class="fa-solid fa-plus me-1"></i>Register Doctor
+      </button>
+      <div id="doc-result" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- Register Emergency Personnel -->
+  <div class="col-md-6">
+    <div class="card p-4 h-100">
+      <h5 class="fw-bold mb-3"><i class="fa-solid fa-truck-medical me-2 text-danger"></i>Register Emergency Personnel</h5>
+      <div class="mb-2">
+        <label class="form-label">Personnel Wallet Address</label>
+        <input type="text" class="form-control" id="emg-address" placeholder="0x..." />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Admin Wallet Address</label>
+        <input type="text" class="form-control" id="emg-admin" placeholder="0x..." />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Admin Private Key <span class="badge bg-warning text-dark">never stored</span></label>
+        <input type="password" class="form-control" id="emg-key" placeholder="0x..." />
+      </div>
+      <button class="btn btn-danger" onclick="registerEmergency()">
+        <i class="fa-solid fa-plus me-1"></i>Register Emergency Personnel
+      </button>
+      <div id="emg-result" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- Check Role -->
+  <div class="col-md-6">
+    <div class="card p-4 h-100">
+      <h5 class="fw-bold mb-3"><i class="fa-solid fa-id-badge me-2 text-info"></i>Check Address Role</h5>
+      <div class="mb-3">
+        <label class="form-label">Wallet Address</label>
+        <input type="text" class="form-control" id="role-address" placeholder="0x..." />
+      </div>
+      <button class="btn btn-info text-white" onclick="checkRole()">
+        <i class="fa-solid fa-magnifying-glass me-1"></i>Check Role
+      </button>
+      <div id="role-result" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- Emergency Audit Log -->
+  <div class="col-md-6">
+    <div class="card p-4 h-100">
+      <h5 class="fw-bold mb-3"><i class="fa-solid fa-scroll me-2 text-warning"></i>Emergency Audit Log</h5>
+      <div class="mb-3">
+        <label class="form-label">Admin Wallet Address</label>
+        <input type="text" class="form-control" id="log-admin" placeholder="0x..." />
+      </div>
+      <button class="btn btn-warning text-dark" onclick="getEmergencyLog()">
+        <i class="fa-solid fa-list me-1"></i>Fetch Log
+      </button>
+      <div id="log-result" class="mt-3"></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const api = (endpoint, body) =>
+    fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(r => r.json());
+
+  function showResult(id, data) {
+    const el = document.getElementById(id);
+    if (data.error) {
+      el.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+      return;
+    }
+    el.innerHTML = `<div class="alert alert-success">✔ Tx: <code>${data.receipt?.tx_hash ?? "OK"}</code></div>`;
+  }
+
+  async function registerDoctor() {
+    const data = await api("/api/register/doctor", {
+      doctor_address: document.getElementById("doc-address").value,
+      admin_account: document.getElementById("doc-admin").value,
+      admin_key: document.getElementById("doc-key").value,
+    });
+    showResult("doc-result", data);
+  }
+
+  async function registerEmergency() {
+    const data = await api("/api/register/emergency", {
+      person_address: document.getElementById("emg-address").value,
+      admin_account: document.getElementById("emg-admin").value,
+      admin_key: document.getElementById("emg-key").value,
+    });
+    showResult("emg-result", data);
+  }
+
+  async function checkRole() {
+    const data = await api("/api/check/role", {
+      address: document.getElementById("role-address").value,
+    });
+    const el = document.getElementById("role-result");
+    if (data.error) { el.innerHTML = `<div class="alert alert-danger">${data.error}</div>`; return; }
+    const roles = [];
+    if (data.is_admin)     roles.push('<span class="badge bg-dark">Admin</span>');
+    if (data.is_doctor)    roles.push('<span class="badge bg-primary">Doctor</span>');
+    if (data.is_patient)   roles.push('<span class="badge bg-success">Patient</span>');
+    if (data.is_emergency) roles.push('<span class="badge bg-danger">Emergency Personnel</span>');
+    el.innerHTML = roles.length
+      ? `<div class="mt-2 d-flex gap-2 flex-wrap">${roles.join("")}</div>`
+      : `<div class="alert alert-secondary">No roles found for this address.</div>`;
+  }
+
+  async function getEmergencyLog() {
+    const data = await api("/api/emergency/log", {
+      admin_account: document.getElementById("log-admin").value,
+    });
+    const el = document.getElementById("log-result");
+    if (data.error) { el.innerHTML = `<div class="alert alert-danger">${data.error}</div>`; return; }
+    if (!data.log.length) { el.innerHTML = `<div class="alert alert-info">No emergency access recorded.</div>`; return; }
+    el.innerHTML = `<table class="table table-sm table-bordered mt-2">
+      <thead><tr><th>Accessor</th><th>Patient</th><th>Time</th><th>Reason</th></tr></thead>
+      <tbody>
+        ${data.log.map(e => `<tr>
+          <td><code>${e.accessor.slice(0,10)}…</code></td>
+          <td><code>${e.patient.slice(0,10)}…</code></td>
+          <td>${e.timestamp}</td>
+          <td>${e.reason}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+  }
+</script>
+{% endblock %}

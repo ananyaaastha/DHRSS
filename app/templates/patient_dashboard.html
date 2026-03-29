@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Patient Dashboard — DHRSS{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-1"><i class="fa-solid fa-user-injured text-primary me-2"></i>Patient Dashboard</h2>
+<p class="text-muted mb-4">Manage your health records and consent on the blockchain.</p>
+
+<div class="row g-4">
+
+  <!-- Register -->
+  <div class="col-md-6">
+    <div class="card p-4 h-100">
+      <h5 class="fw-bold mb-3"><i class="fa-solid fa-id-card me-2 text-primary"></i>Register as Patient</h5>
+      <div class="mb-3">
+        <label class="form-label">Wallet Address</label>
+        <input type="text" class="form-control" id="reg-account" placeholder="0x..." />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Private Key <span class="badge bg-warning text-dark">never stored</span></label>
+        <input type="password" class="form-control" id="reg-key" placeholder="0x..." />
+      </div>
+      <button class="btn btn-primary" onclick="registerPatient()">
+        <i class="fa-solid fa-plus me-1"></i>Register
+      </button>
+      <div id="reg-result" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- Add Record -->
+  <div class="col-md-6">
+    <div class="card p-4 h-100">
+      <h5 class="fw-bold mb-3"><i class="fa-solid fa-file-medical me-2 text-success"></i>Add Health Record</h5>
+      <div class="mb-2">
+        <label class="form-label">Patient Address</label>
+        <input type="text" class="form-control" id="rec-patient" placeholder="0x..." />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">IPFS Hash (CID)</label>
+        <input type="text" class="form-control" id="rec-hash" placeholder="Qm..." />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Record Type</label>
+        <select class="form-select" id="rec-type">
+          <option>Lab Result</option>
+          <option>Prescription</option>
+          <option>X-Ray / Scan</option>
+          <option>Consultation Notes</option>
+          <option>Vaccination</option>
+          <option>Surgical Report</option>
+        </select>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Your Wallet Address (caller)</label>
+        <input type="text" class="form-control" id="rec-caller" placeholder="0x..." />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Private Key <span class="badge bg-warning text-dark">never stored</span></label>
+        <input type="password" class="form-control" id="rec-key" placeholder="0x..." />
+      </div>
+      <button class="btn btn-success" onclick="addRecord()">
+        <i class="fa-solid fa-cloud-arrow-up me-1"></i>Add Record
+      </button>
+      <div id="rec-result" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- View Records -->
+  <div class="col-md-6">
+    <div class="card p-4 h-100">
+      <h5 class="fw-bold mb-3"><i class="fa-solid fa-folder-open me-2 text-info"></i>View My Records</h5>
+      <div class="mb-2">
+        <label class="form-label">Patient Address</label>
+        <input type="text" class="form-control" id="view-patient" placeholder="0x..." />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Caller Address (must be patient/authorised doctor)</label>
+        <input type="text" class="form-control" id="view-caller" placeholder="0x..." />
+      </div>
+      <button class="btn btn-info text-white" onclick="getRecords()">
+        <i class="fa-solid fa-magnifying-glass me-1"></i>Fetch Records
+      </button>
+      <div id="view-result" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- Grant / Revoke Consent -->
+  <div class="col-md-6">
+    <div class="card p-4 h-100">
+      <h5 class="fw-bold mb-3"><i class="fa-solid fa-handshake me-2 text-warning"></i>Manage Consent</h5>
+      <div class="mb-2">
+        <label class="form-label">Doctor Address</label>
+        <input type="text" class="form-control" id="consent-doctor" placeholder="0x..." />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Duration (seconds)</label>
+        <input type="number" class="form-control" id="consent-duration" value="86400" />
+        <small class="text-muted">86400 = 1 day &nbsp;|&nbsp; 3600 = 1 hour</small>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Your Wallet Address</label>
+        <input type="text" class="form-control" id="consent-patient" placeholder="0x..." />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Private Key <span class="badge bg-warning text-dark">never stored</span></label>
+        <input type="password" class="form-control" id="consent-key" placeholder="0x..." />
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-warning text-dark flex-fill" onclick="grantConsent()">
+          <i class="fa-solid fa-unlock me-1"></i>Grant
+        </button>
+        <button class="btn btn-danger flex-fill" onclick="revokeConsent()">
+          <i class="fa-solid fa-lock me-1"></i>Revoke
+        </button>
+      </div>
+      <div id="consent-result" class="mt-3"></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const api = (endpoint, body) =>
+    fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(r => r.json());
+
+  function showResult(id, data) {
+    const el = document.getElementById(id);
+    if (data.error) {
+      el.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+    } else {
+      const content = data.records
+        ? buildRecordTable(data.records)
+        : `<div class="alert alert-success">✔ Tx: <code>${data.receipt?.tx_hash ?? "OK"}</code><br/>Block: ${data.receipt?.block ?? "—"}</div>`;
+      el.innerHTML = content;
+    }
+  }
+
+  function buildRecordTable(records) {
+    if (!records.length) return `<div class="alert alert-info">No records found.</div>`;
+    return `<table class="table table-sm table-bordered mt-2">
+      <thead><tr><th>#</th><th>Type</th><th>IPFS Hash</th><th>Added</th></tr></thead>
+      <tbody>
+        ${records.map((r, i) => `<tr>
+          <td>${i + 1}</td>
+          <td><span class="badge bg-primary">${r.record_type}</span></td>
+          <td><a href="https://ipfs.io/ipfs/${r.ipfs_hash}" target="_blank"><code>${r.ipfs_hash.slice(0,12)}…</code></a></td>
+          <td>${r.timestamp}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+  }
+
+  async function registerPatient() {
+    const data = await api("/api/register/patient", {
+      account: document.getElementById("reg-account").value,
+      private_key: document.getElementById("reg-key").value,
+    });
+    showResult("reg-result", data);
+  }
+
+  async function addRecord() {
+    const data = await api("/api/records/add", {
+      patient: document.getElementById("rec-patient").value,
+      ipfs_hash: document.getElementById("rec-hash").value,
+      record_type: document.getElementById("rec-type").value,
+      caller: document.getElementById("rec-caller").value,
+      private_key: document.getElementById("rec-key").value,
+    });
+    showResult("rec-result", data);
+  }
+
+  async function getRecords() {
+    const data = await api("/api/records/get", {
+      patient: document.getElementById("view-patient").value,
+      caller: document.getElementById("view-caller").value,
+    });
+    showResult("view-result", data);
+  }
+
+  async function grantConsent() {
+    const data = await api("/api/consent/grant", {
+      doctor: document.getElementById("consent-doctor").value,
+      duration_seconds: document.getElementById("consent-duration").value,
+      patient: document.getElementById("consent-patient").value,
+      private_key: document.getElementById("consent-key").value,
+    });
+    showResult("consent-result", data);
+  }
+
+  async function revokeConsent() {
+    const data = await api("/api/consent/revoke", {
+      doctor: document.getElementById("consent-doctor").value,
+      patient: document.getElementById("consent-patient").value,
+      private_key: document.getElementById("consent-key").value,
+    });
+    showResult("consent-result", data);
+  }
+</script>
+{% endblock %}

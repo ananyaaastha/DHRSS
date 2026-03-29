@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}DHRSS — Decentralised Healthcare Records{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="hero text-center py-5 mb-5 rounded-4">
+  <div class="py-3">
+    <span class="badge bg-primary-subtle text-primary mb-3 px-3 py-2 rounded-pill fs-6">
+      <i class="fa-brands fa-ethereum me-1"></i> Powered by Ethereum Smart Contracts
+    </span>
+    <h1 class="display-4 fw-bold">Decentralised Healthcare<br/>Record Sharing System</h1>
+    <p class="lead text-muted mt-3 mb-4 mx-auto" style="max-width:600px">
+      Secure, patient-owned medical records stored on the blockchain.
+      Grant time-limited consent, revoke access instantly, and ensure
+      emergency personnel can always reach critical data.
+    </p>
+    <div class="d-flex justify-content-center gap-3 flex-wrap">
+      <a href="/patient" class="btn btn-primary btn-lg px-4">
+        <i class="fa-solid fa-user-injured me-2"></i>Patient Portal
+      </a>
+      <a href="/doctor" class="btn btn-outline-secondary btn-lg px-4">
+        <i class="fa-solid fa-stethoscope me-2"></i>Doctor Portal
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Feature cards -->
+<div class="row g-4 mb-5">
+  <div class="col-md-3">
+    <div class="card feature-card h-100 text-center p-3">
+      <div class="feature-icon mb-3"><i class="fa-solid fa-file-medical"></i></div>
+      <h5 class="fw-bold">Patient Records</h5>
+      <p class="text-muted small">Upload encrypted records (IPFS) linked immutably to your wallet address.</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card feature-card h-100 text-center p-3">
+      <div class="feature-icon feature-icon--green mb-3"><i class="fa-solid fa-clock-rotate-left"></i></div>
+      <h5 class="fw-bold">Auto-Expiry Consent</h5>
+      <p class="text-muted small">Grant doctors time-limited access — consent revokes automatically on-chain when it expires.</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card feature-card h-100 text-center p-3">
+      <div class="feature-icon feature-icon--red mb-3"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <h5 class="fw-bold">Emergency Override</h5>
+      <p class="text-muted small">Authorised emergency personnel can access records in critical situations — every access is permanently logged.</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card feature-card h-100 text-center p-3">
+      <div class="feature-icon feature-icon--purple mb-3"><i class="fa-solid fa-user-doctor"></i></div>
+      <h5 class="fw-bold">Doctor Access Control</h5>
+      <p class="text-muted small">Admin-verified doctors can only view or add records when patient consent is active.</p>
+    </div>
+  </div>
+</div>
+
+<!-- How it works -->
+<div class="card p-4 mb-5">
+  <h4 class="fw-bold mb-4"><i class="fa-solid fa-diagram-project me-2 text-primary"></i>How It Works</h4>
+  <div class="row g-3 text-center">
+    <div class="col step-col">
+      <div class="step-number">1</div>
+      <p class="small mt-2"><strong>Register</strong><br/>Patient connects wallet &amp; registers on-chain</p>
+    </div>
+    <div class="col step-col">
+      <div class="step-number">2</div>
+      <p class="small mt-2"><strong>Add Record</strong><br/>Upload encrypted file to IPFS; hash stored on blockchain</p>
+    </div>
+    <div class="col step-col">
+      <div class="step-number">3</div>
+      <p class="small mt-2"><strong>Grant Consent</strong><br/>Patient grants doctor time-limited access</p>
+    </div>
+    <div class="col step-col">
+      <div class="step-number">4</div>
+      <p class="small mt-2"><strong>Auto-Expiry</strong><br/>Smart contract auto-revokes access when duration ends</p>
+    </div>
+    <div class="col step-col">
+      <div class="step-number">5</div>
+      <p class="small mt-2"><strong>Emergency</strong><br/>Override with full audit trail logged immutably</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,233 @@
+[
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "address", "name": "accessor", "type": "address" },
+      { "indexed": true,  "internalType": "address", "name": "patient",  "type": "address" },
+      { "indexed": false, "internalType": "string",  "name": "reason",   "type": "string"  }
+    ],
+    "name": "EmergencyOverride",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "address", "name": "patient",    "type": "address" },
+      { "indexed": true,  "internalType": "address", "name": "doctor",     "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "expiryTime", "type": "uint256" }
+    ],
+    "name": "ConsentGranted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "patient", "type": "address" },
+      { "indexed": true, "internalType": "address", "name": "doctor",  "type": "address" }
+    ],
+    "name": "ConsentRevoked",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "address", "name": "doctor", "type": "address" }
+    ],
+    "name": "DoctorRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "address", "name": "patient", "type": "address" }
+    ],
+    "name": "PatientRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "address", "name": "patient",     "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "recordIndex", "type": "uint256" },
+      { "indexed": false, "internalType": "string",  "name": "recordType",  "type": "string"  }
+    ],
+    "name": "RecordAdded",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "admin",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_patient",    "type": "address" },
+      { "internalType": "string",  "name": "_ipfsHash",   "type": "string"  },
+      { "internalType": "string",  "name": "_recordType", "type": "string"  }
+    ],
+    "name": "addRecord",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_patient", "type": "address" },
+      { "internalType": "string",  "name": "_reason",  "type": "string"  }
+    ],
+    "name": "emergencyAccess",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "emergencyLog",
+    "outputs": [
+      { "internalType": "address", "name": "accessor",  "type": "address" },
+      { "internalType": "address", "name": "patient",   "type": "address" },
+      { "internalType": "uint256", "name": "timestamp", "type": "uint256" },
+      { "internalType": "string",  "name": "reason",    "type": "string"  }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "emergencyPersonnel",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_patient", "type": "address" },
+      { "internalType": "address", "name": "_doctor",  "type": "address" }
+    ],
+    "name": "getConsentExpiry",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getEmergencyLog",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "accessor",  "type": "address" },
+          { "internalType": "address", "name": "patient",   "type": "address" },
+          { "internalType": "uint256", "name": "timestamp", "type": "uint256" },
+          { "internalType": "string",  "name": "reason",    "type": "string"  }
+        ],
+        "internalType": "struct HealthRecords.EmergencyAccess[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getEmergencyLogCount",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_patient", "type": "address" }],
+    "name": "getRecordCount",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_patient", "type": "address" }],
+    "name": "getRecords",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "string",  "name": "ipfsHash",   "type": "string"  },
+          { "internalType": "uint256", "name": "timestamp",  "type": "uint256" },
+          { "internalType": "address", "name": "addedBy",    "type": "address" },
+          { "internalType": "string",  "name": "recordType", "type": "string"  }
+        ],
+        "internalType": "struct HealthRecords.Record[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_doctor",      "type": "address" },
+      { "internalType": "uint256", "name": "_durationSec", "type": "uint256" }
+    ],
+    "name": "grantConsent",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_patient", "type": "address" },
+      { "internalType": "address", "name": "_doctor",  "type": "address" }
+    ],
+    "name": "hasValidConsent",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_doctor", "type": "address" }],
+    "name": "registerDoctor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_person", "type": "address" }],
+    "name": "registerEmergencyPersonnel",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "registerPatient",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "registeredPatients",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_doctor", "type": "address" }],
+    "name": "revokeConsent",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "doctors",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

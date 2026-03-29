@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}Doctor Dashboard — DHRSS{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-1"><i class="fa-solid fa-stethoscope text-success me-2"></i>Doctor Dashboard</h2>
+<p class="text-muted mb-4">View patient records when you have valid consent, or trigger an emergency override.</p>
+
+<div class="row g-4">
+
+  <!-- Check Consent -->
+  <div class="col-md-6">
+    <div class="card p-4 h-100">
+      <h5 class="fw-bold mb-3"><i class="fa-solid fa-circle-check me-2 text-info"></i>Check Consent Status</h5>
+      <div class="mb-2">
+        <label class="form-label">Patient Address</label>
+        <input type="text" class="form-control" id="chk-patient" placeholder="0x..." />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Doctor Address</label>
+        <input type="text" class="form-control" id="chk-doctor" placeholder="0x..." />
+      </div>
+      <button class="btn btn-info text-white" onclick="checkConsent()">
+        <i class="fa-solid fa-magnifying-glass me-1"></i>Check
+      </button>
+      <div id="chk-result" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- View Patient Records -->
+  <div class="col-md-6">
+    <div class="card p-4 h-100">
+      <h5 class="fw-bold mb-3"><i class="fa-solid fa-folder-open me-2 text-primary"></i>View Patient Records</h5>
+      <div class="mb-2">
+        <label class="form-label">Patient Address</label>
+        <input type="text" class="form-control" id="view-patient" placeholder="0x..." />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Doctor Address (caller)</label>
+        <input type="text" class="form-control" id="view-doctor" placeholder="0x..." />
+      </div>
+      <button class="btn btn-primary" onclick="viewRecords()">
+        <i class="fa-solid fa-eye me-1"></i>View Records
+      </button>
+      <div id="view-result" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- Add Record (with consent) -->
+  <div class="col-md-6">
+    <div class="card p-4 h-100">
+      <h5 class="fw-bold mb-3"><i class="fa-solid fa-file-circle-plus me-2 text-success"></i>Add Record for Patient</h5>
+      <div class="mb-2">
+        <label class="form-label">Patient Address</label>
+        <input type="text" class="form-control" id="add-patient" placeholder="0x..." />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">IPFS Hash (CID)</label>
+        <input type="text" class="form-control" id="add-hash" placeholder="Qm..." />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Record Type</label>
+        <select class="form-select" id="add-type">
+          <option>Lab Result</option><option>Prescription</option>
+          <option>X-Ray / Scan</option><option>Consultation Notes</option>
+          <option>Vaccination</option><option>Surgical Report</option>
+        </select>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Doctor Address (caller)</label>
+        <input type="text" class="form-control" id="add-doctor" placeholder="0x..." />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Private Key <span class="badge bg-warning text-dark">never stored</span></label>
+        <input type="password" class="form-control" id="add-key" placeholder="0x..." />
+      </div>
+      <button class="btn btn-success" onclick="addRecord()">
+        <i class="fa-solid fa-cloud-arrow-up me-1"></i>Add Record
+      </button>
+      <div id="add-result" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- Emergency Override -->
+  <div class="col-md-6">
+    <div class="card p-4 h-100 border-danger">
+      <h5 class="fw-bold mb-3 text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Emergency Override</h5>
+      <div class="alert alert-danger py-2 small">
+        <i class="fa-solid fa-exclamation-circle me-1"></i>
+        This action is <strong>permanently logged on-chain</strong>. Only use in genuine emergencies.
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Patient Address</label>
+        <input type="text" class="form-control" id="emg-patient" placeholder="0x..." />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Reason (required)</label>
+        <textarea class="form-control" id="emg-reason" rows="2" placeholder="e.g. Unconscious patient, no next of kin available"></textarea>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Your Address (emergency personnel)</label>
+        <input type="text" class="form-control" id="emg-caller" placeholder="0x..." />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Private Key <span class="badge bg-warning text-dark">never stored</span></label>
+        <input type="password" class="form-control" id="emg-key" placeholder="0x..." />
+      </div>
+      <button class="btn btn-danger" onclick="emergencyAccess()">
+        <i class="fa-solid fa-siren me-1"></i>Trigger Emergency Access
+      </button>
+      <div id="emg-result" class="mt-3"></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const api = (endpoint, body) =>
+    fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(r => r.json());
+
+  function showResult(id, data) {
+    const el = document.getElementById(id);
+    if (data.error) {
+      el.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+    } else if (data.records !== undefined) {
+      el.innerHTML = buildRecordTable(data.records);
+    } else if (data.valid !== undefined) {
+      const cls = data.valid ? "success" : "warning";
+      el.innerHTML = `<div class="alert alert-${cls}">
+        Consent is <strong>${data.valid ? "ACTIVE ✔" : "INACTIVE ✘"}</strong>
+        ${data.expiry ? `<br/>Expires: ${data.expiry}` : ""}
+      </div>`;
+    } else {
+      el.innerHTML = `<div class="alert alert-success">✔ Tx: <code>${data.receipt?.tx_hash ?? "OK"}</code></div>`;
+    }
+  }
+
+  function buildRecordTable(records) {
+    if (!records.length) return `<div class="alert alert-info">No records found.</div>`;
+    return `<table class="table table-sm table-bordered mt-2">
+      <thead><tr><th>#</th><th>Type</th><th>IPFS Hash</th><th>Added</th></tr></thead>
+      <tbody>
+        ${records.map((r, i) => `<tr>
+          <td>${i + 1}</td>
+          <td><span class="badge bg-primary">${r.record_type}</span></td>
+          <td><a href="https://ipfs.io/ipfs/${r.ipfs_hash}" target="_blank"><code>${r.ipfs_hash.slice(0,12)}…</code></a></td>
+          <td>${r.timestamp}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+  }
+
+  async function checkConsent() {
+    const data = await api("/api/consent/check", {
+      patient: document.getElementById("chk-patient").value,
+      doctor: document.getElementById("chk-doctor").value,
+    });
+    showResult("chk-result", data);
+  }
+
+  async function viewRecords() {
+    const data = await api("/api/records/get", {
+      patient: document.getElementById("view-patient").value,
+      caller: document.getElementById("view-doctor").value,
+    });
+    showResult("view-result", data);
+  }
+
+  async function addRecord() {
+    const data = await api("/api/records/add", {
+      patient: document.getElementById("add-patient").value,
+      ipfs_hash: document.getElementById("add-hash").value,
+      record_type: document.getElementById("add-type").value,
+      caller: document.getElementById("add-doctor").value,
+      private_key: document.getElementById("add-key").value,
+    });
+    showResult("add-result", data);
+  }
+
+  async function emergencyAccess() {
+    const data = await api("/api/emergency/access", {
+      patient: document.getElementById("emg-patient").value,
+      reason: document.getElementById("emg-reason").value,
+      caller: document.getElementById("emg-caller").value,
+      private_key: document.getElementById("emg-key").value,
+    });
+    showResult("emg-result", data);
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,166 @@
+/* ── DHRSS Global Styles ─────────────────────────────────────────── */
+
+:root {
+  --primary: #4f46e5;
+  --primary-light: #eef2ff;
+  --success: #059669;
+  --danger: #dc2626;
+  --warning: #d97706;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --muted: #64748b;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+/* ── Navbar ──────────────────────────────────────────────────────── */
+
+.navbar {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  box-shadow: 0 2px 12px rgba(79, 70, 229, 0.2);
+  padding: 0.75rem 0;
+}
+
+.navbar-brand {
+  font-size: 1.25rem;
+  letter-spacing: -0.3px;
+}
+
+.nav-link {
+  color: rgba(255,255,255,0.8) !important;
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem !important;
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  background: rgba(255,255,255,0.12);
+  color: #fff !important;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────── */
+
+.hero {
+  background: linear-gradient(135deg, var(--primary-light) 0%, #f0fdf4 100%);
+  border: 1px solid var(--border);
+}
+
+/* ── Cards ───────────────────────────────────────────────────────── */
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  background: var(--surface);
+  transition: box-shadow 0.2s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.08);
+}
+
+/* ── Feature cards ───────────────────────────────────────────────── */
+
+.feature-card {
+  border-top: 3px solid var(--primary);
+}
+
+.feature-icon {
+  width: 52px;
+  height: 52px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  margin: 0 auto;
+}
+
+.feature-icon--green  { background: #d1fae5; color: #059669; }
+.feature-icon--red    { background: #fee2e2; color: #dc2626; }
+.feature-icon--purple { background: #ede9fe; color: #7c3aed; }
+
+/* ── Steps ───────────────────────────────────────────────────────── */
+
+.step-col { flex: 1; }
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  background: var(--primary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0 auto;
+}
+
+/* ── Forms ───────────────────────────────────────────────────────── */
+
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 0.875rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 0.3rem;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+
+.btn {
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s;
+}
+
+.btn-primary { background: var(--primary); border-color: var(--primary); }
+.btn-primary:hover { background: #4338ca; border-color: #4338ca); }
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+
+footer {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* ── Utilities ───────────────────────────────────────────────────── */
+
+.text-purple { color: #7c3aed !important; }
+
+code {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  color: #7c3aed;
+}
+
+.alert { border-radius: 10px; font-size: 0.875rem; }
+
+table { font-size: 0.82rem; }
