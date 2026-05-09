@@ -59,7 +59,7 @@ DHRSS/
 ### 1. Clone & install dependencies
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/DHRSS.git
+git clone https://github.com/ananyaaastha/DHRSS.git
 cd DHRSS
 pip install -r requirements.txt
 ```
