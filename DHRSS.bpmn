@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.13.2">
+  <collaboration id="Collab_DHRSS">
+    <participant id="Part_Patient" name="Patient" processRef="Proc_Patient" />
+    <participant id="Part_HP" name="Healthcare provider" processRef="Proc_HP" />
+    <participant id="Part_BC" name="Blockchain network" processRef="Proc_BC" />
+    <participant id="Part_Regulator" name="Regulator" processRef="Proc_Regulator" />
+    <messageFlow id="MF1" name="access request" sourceRef="Task_HP_Request" targetRef="Task_P_Receive" />
+    <messageFlow id="MF2" name="grantAccess() tx" sourceRef="Task_P_Grant" targetRef="SE_BC_Normal" />
+    <messageFlow id="MF3" name="consent confirmed" sourceRef="Task_BC_Record" targetRef="ICE_HP_Wait" />
+    <messageFlow id="MF4" name="uploadRecord() tx" sourceRef="Task_HP_Upload" targetRef="Task_BC_Store" />
+    <messageFlow id="MF_E1" name="emergencyAccess() tx" sourceRef="Task_HP_Emergency" targetRef="SE_BC_Emergency" />
+    <messageFlow id="MF_E2" name="emergency log emitted" sourceRef="Task_BC_Emergency" targetRef="ICE_Reg" />
+  </collaboration>
+  <process id="Proc_Patient" isExecutable="false">
+    <startEvent id="SE_P" />
+    <task id="Task_P_Receive" name="Receive access request" />
+    <exclusiveGateway id="GW_P_Grant" name="Grant?" gatewayDirection="Diverging" />
+    <task id="Task_P_Grant" name="Grant access">
+      <outgoing>Flow_0oxpud6</outgoing>
+    </task>
+    <endEvent id="EE_P_Denied" name="Denied" />
+    <sequenceFlow id="SF_P1" sourceRef="SE_P" targetRef="Task_P_Receive" />
+    <sequenceFlow id="SF_P2" sourceRef="Task_P_Receive" targetRef="GW_P_Grant" />
+    <sequenceFlow id="SF_P3" name="yes" sourceRef="GW_P_Grant" targetRef="Task_P_Grant" />
+    <sequenceFlow id="SF_P5" name="no" sourceRef="GW_P_Grant" targetRef="EE_P_Denied" />
+    <intermediateCatchEvent id="Event_1wbx81u" name="Receive Acces Confirmation">
+      <incoming>Flow_0oxpud6</incoming>
+      <outgoing>Flow_05rbj22</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_05qy0wu" />
+    </intermediateCatchEvent>
+    <sequenceFlow id="Flow_0oxpud6" sourceRef="Task_P_Grant" targetRef="Event_1wbx81u" />
+    <endEvent id="Event_0z4qld0">
+      <incoming>Flow_05rbj22</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_05rbj22" sourceRef="Event_1wbx81u" targetRef="Event_0z4qld0" />
+  </process>
+  <process id="Proc_HP" isExecutable="false">
+    <startEvent id="SE_HP" />
+    <exclusiveGateway id="GW_HP_Emergency" name="Emergency?" gatewayDirection="Diverging" />
+    <task id="Task_HP_Request" name="Request record access" />
+    <intermediateCatchEvent id="ICE_HP_Wait" name="Wait for consent">
+      <messageEventDefinition id="MsgDef_HP_Wait" />
+    </intermediateCatchEvent>
+    <task id="Task_HP_Upload" name="Upload record" />
+    <endEvent id="EE_HP_Normal" />
+    <task id="Task_HP_Emergency" name="Request emergency access" />
+    <endEvent id="EE_HP_Emergency" />
+    <sequenceFlow id="SF_HP1" sourceRef="SE_HP" targetRef="GW_HP_Emergency" />
+    <sequenceFlow id="SF_HP_No" name="no — normal" sourceRef="GW_HP_Emergency" targetRef="Task_HP_Request" />
+    <sequenceFlow id="SF_HP_Yes" name="yes — emergency" sourceRef="GW_HP_Emergency" targetRef="Task_HP_Emergency" />
+    <sequenceFlow id="SF_HP2" sourceRef="Task_HP_Request" targetRef="ICE_HP_Wait" />
+    <sequenceFlow id="SF_HP3" sourceRef="ICE_HP_Wait" targetRef="Task_HP_Upload" />
+    <sequenceFlow id="SF_HP4" sourceRef="Task_HP_Upload" targetRef="EE_HP_Normal" />
+    <sequenceFlow id="SF_HP_Emerg_End" sourceRef="Task_HP_Emergency" targetRef="EE_HP_Emergency" />
+  </process>
+  <process id="Proc_BC" isExecutable="false">
+    <startEvent id="SE_BC_Normal" name="Consent granted">
+      <messageEventDefinition id="MsgDef_BC_Normal" />
+    </startEvent>
+    <task id="Task_BC_Record" name="Record consent&#10;(AccessControl.sol)" />
+    <task id="Task_BC_Store" name="Store record reference&#10;(RecordRegistry.sol)" />
+    <endEvent id="EE_BC_Normal" />
+    <startEvent id="SE_BC_Emergency" name="Emergency request">
+      <messageEventDefinition id="MsgDef_BC_Emergency" />
+    </startEvent>
+    <task id="Task_BC_Emergency" name="Log emergency access&#10;(EmergencyAccess.sol)" />
+    <endEvent id="EE_BC_Emergency" />
+    <sequenceFlow id="SF_BC1" sourceRef="SE_BC_Normal" targetRef="Task_BC_Record" />
+    <sequenceFlow id="SF_BC2" sourceRef="Task_BC_Record" targetRef="Task_BC_Store" />
+    <sequenceFlow id="SF_BC3" sourceRef="Task_BC_Store" targetRef="EE_BC_Normal" />
+    <sequenceFlow id="SF_BC_E1" sourceRef="SE_BC_Emergency" targetRef="Task_BC_Emergency" />
+    <sequenceFlow id="SF_BC_E2" sourceRef="Task_BC_Emergency" targetRef="EE_BC_Emergency" />
+  </process>
+  <process id="Proc_Regulator" isExecutable="false">
+    <intermediateCatchEvent id="ICE_Reg" name="Receive emergency log">
+      <messageEventDefinition id="MsgDef_Reg" />
+    </intermediateCatchEvent>
+    <task id="Task_Reg_Review" name="Review emergency audit log" />
+    <task id="Task_Reg_Penalise" name="Penalise misuse (if applicable)" />
+    <endEvent id="EE_Reg" />
+    <sequenceFlow id="SF_Reg1" sourceRef="ICE_Reg" targetRef="Task_Reg_Review" />
+    <sequenceFlow id="SF_Reg2" sourceRef="Task_Reg_Review" targetRef="Task_Reg_Penalise" />
+    <sequenceFlow id="SF_Reg3" sourceRef="Task_Reg_Penalise" targetRef="EE_Reg" />
+  </process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Collab_DHRSS">
+      <bpmndi:BPMNShape id="Shape_Part_Patient" bpmnElement="Part_Patient" isHorizontal="true">
+        <dc:Bounds x="130" y="80" width="790" height="170" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_SE_P" bpmnElement="SE_P">
+        <dc:Bounds x="212" y="147" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_P_Receive" bpmnElement="Task_P_Receive">
+        <dc:Bounds x="292" y="125" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_GW_P_Grant" bpmnElement="GW_P_Grant" isMarkerVisible="true">
+        <dc:Bounds x="477" y="140" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="482" y="115" width="40" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_P_Grant" bpmnElement="Task_P_Grant">
+        <dc:Bounds x="582" y="125" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EE_P_Denied" bpmnElement="EE_P_Denied">
+        <dc:Bounds x="484" y="210" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="472" y="253" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1wbx81u_di" bpmnElement="Event_1wbx81u">
+        <dc:Bounds x="762" y="147" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="744" y="190" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0z4qld0_di" bpmnElement="Event_0z4qld0">
+        <dc:Bounds x="862" y="147" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_SF_P1" bpmnElement="SF_P1">
+        <di:waypoint x="248" y="165" />
+        <di:waypoint x="292" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_P2" bpmnElement="SF_P2">
+        <di:waypoint x="422" y="165" />
+        <di:waypoint x="477" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_P3" bpmnElement="SF_P3">
+        <di:waypoint x="527" y="165" />
+        <di:waypoint x="582" y="165" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="539" y="147" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_P5" bpmnElement="SF_P5">
+        <di:waypoint x="502" y="190" />
+        <di:waypoint x="502" y="210" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="510" y="196" width="14" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0oxpud6_di" bpmnElement="Flow_0oxpud6">
+        <di:waypoint x="702" y="165" />
+        <di:waypoint x="762" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_05rbj22_di" bpmnElement="Flow_05rbj22">
+        <di:waypoint x="798" y="165" />
+        <di:waypoint x="862" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Part_HP" bpmnElement="Part_HP" isHorizontal="true">
+        <dc:Bounds x="130" y="250" width="790" height="240" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_SE_HP" bpmnElement="SE_HP">
+        <dc:Bounds x="212" y="312" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_GW_HP_Emergency" bpmnElement="GW_HP_Emergency" isMarkerVisible="true">
+        <dc:Bounds x="272" y="312" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="262" y="287" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_HP_Request" bpmnElement="Task_HP_Request">
+        <dc:Bounds x="376" y="295" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_ICE_HP_Wait" bpmnElement="ICE_HP_Wait">
+        <dc:Bounds x="560" y="317" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="536" y="360" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_HP_Upload" bpmnElement="Task_HP_Upload">
+        <dc:Bounds x="650" y="295" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EE_HP_Normal" bpmnElement="EE_HP_Normal">
+        <dc:Bounds x="832" y="317" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_HP_Emergency" bpmnElement="Task_HP_Emergency">
+        <dc:Bounds x="376" y="410" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EE_HP_Emergency" bpmnElement="EE_HP_Emergency">
+        <dc:Bounds x="588" y="432" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_SF_HP1" bpmnElement="SF_HP1">
+        <di:waypoint x="248" y="330" />
+        <di:waypoint x="272" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_HP_No" bpmnElement="SF_HP_No">
+        <di:waypoint x="322" y="330" />
+        <di:waypoint x="376" y="330" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="330" y="312" width="38" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_HP_Yes" bpmnElement="SF_HP_Yes">
+        <di:waypoint x="297" y="362" />
+        <di:waypoint x="297" y="450" />
+        <di:waypoint x="376" y="450" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="303" y="393" width="35" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_HP2" bpmnElement="SF_HP2">
+        <di:waypoint x="506" y="335" />
+        <di:waypoint x="560" y="335" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_HP3" bpmnElement="SF_HP3">
+        <di:waypoint x="596" y="335" />
+        <di:waypoint x="650" y="335" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_HP4" bpmnElement="SF_HP4">
+        <di:waypoint x="770" y="335" />
+        <di:waypoint x="832" y="335" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_HP_Emerg_End" bpmnElement="SF_HP_Emerg_End">
+        <di:waypoint x="526" y="450" />
+        <di:waypoint x="588" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Part_BC" bpmnElement="Part_BC" isHorizontal="true">
+        <dc:Bounds x="130" y="490" width="790" height="210" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_SE_BC_Normal" bpmnElement="SE_BC_Normal">
+        <dc:Bounds x="212" y="527" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="190" y="570" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_BC_Record" bpmnElement="Task_BC_Record">
+        <dc:Bounds x="292" y="505" width="155" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_BC_Store" bpmnElement="Task_BC_Store">
+        <dc:Bounds x="502" y="505" width="165" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EE_BC_Normal" bpmnElement="EE_BC_Normal">
+        <dc:Bounds x="732" y="527" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_SE_BC_Emergency" bpmnElement="SE_BC_Emergency">
+        <dc:Bounds x="212" y="617" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="190" y="660" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_BC_Emergency" bpmnElement="Task_BC_Emergency">
+        <dc:Bounds x="292" y="595" width="165" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EE_BC_Emergency" bpmnElement="EE_BC_Emergency">
+        <dc:Bounds x="522" y="617" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_SF_BC1" bpmnElement="SF_BC1">
+        <di:waypoint x="248" y="545" />
+        <di:waypoint x="292" y="545" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_BC2" bpmnElement="SF_BC2">
+        <di:waypoint x="447" y="545" />
+        <di:waypoint x="502" y="545" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_BC3" bpmnElement="SF_BC3">
+        <di:waypoint x="667" y="545" />
+        <di:waypoint x="732" y="545" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_BC_E1" bpmnElement="SF_BC_E1">
+        <di:waypoint x="248" y="635" />
+        <di:waypoint x="292" y="635" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_BC_E2" bpmnElement="SF_BC_E2">
+        <di:waypoint x="457" y="635" />
+        <di:waypoint x="522" y="635" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Part_Regulator" bpmnElement="Part_Regulator" isHorizontal="true">
+        <dc:Bounds x="130" y="700" width="790" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_ICE_Reg" bpmnElement="ICE_Reg">
+        <dc:Bounds x="212" y="752" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="188" y="795" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Reg_Review" bpmnElement="Task_Reg_Review">
+        <dc:Bounds x="302" y="730" width="155" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Reg_Penalise" bpmnElement="Task_Reg_Penalise">
+        <dc:Bounds x="522" y="730" width="165" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EE_Reg" bpmnElement="EE_Reg">
+        <dc:Bounds x="752" y="752" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_SF_Reg1" bpmnElement="SF_Reg1">
+        <di:waypoint x="248" y="770" />
+        <di:waypoint x="302" y="770" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_Reg2" bpmnElement="SF_Reg2">
+        <di:waypoint x="457" y="770" />
+        <di:waypoint x="522" y="770" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SF_Reg3" bpmnElement="SF_Reg3">
+        <di:waypoint x="687" y="770" />
+        <di:waypoint x="752" y="770" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_MF1" bpmnElement="MF1">
+        <di:waypoint x="441" y="295" />
+        <di:waypoint x="357" y="205" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="360" y="244" width="75" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_MF2" bpmnElement="MF2">
+        <di:waypoint x="642" y="205" />
+        <di:waypoint x="930" y="205" />
+        <di:waypoint x="930" y="500" />
+        <di:waypoint x="230" y="500" />
+        <di:waypoint x="230" y="527" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="936" y="338" width="74" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_MF3" bpmnElement="MF3">
+        <di:waypoint x="370" y="505" />
+        <di:waypoint x="370" y="490" />
+        <di:waypoint x="578" y="490" />
+        <di:waypoint x="578" y="353" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="445" y="472" width="75" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_MF4" bpmnElement="MF4">
+        <di:waypoint x="710" y="375" />
+        <di:waypoint x="584" y="505" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="614" y="425" width="74" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_MF_E1" bpmnElement="MF_E1">
+        <di:waypoint x="451" y="490" />
+        <di:waypoint x="451" y="500" />
+        <di:waypoint x="155" y="500" />
+        <di:waypoint x="155" y="635" />
+        <di:waypoint x="212" y="635" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="160" y="558" width="74" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_MF_E2" bpmnElement="MF_E2">
+        <di:waypoint x="374" y="675" />
+        <di:waypoint x="230" y="752" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="265" y="700" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
