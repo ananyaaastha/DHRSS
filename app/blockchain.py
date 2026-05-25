@@ -1,8 +1,8 @@
 """
-blockchain.py — Web3.py wrapper for the HealthRecords smart contract.
-
-All write operations require the caller to supply their private key so
-the transaction can be signed locally (no key is ever stored server-side).
+blockchain.py — Web3.py wrapper for DHRSS (3 contracts).
+PatientRegistry → registration
+AccessControl   → consent + emergency
+HealthRecords   → records
 """
 
 import json
@@ -13,17 +13,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ─────────────────────────── Config ─────────────────────────────────
-
-ABI_PATH      = os.path.join(os.path.dirname(__file__), "..", "contracts", "abi", "HealthRecords.json")
 PROVIDER_URL  = os.getenv("WEB3_PROVIDER_URL", "http://127.0.0.1:7545")
-CONTRACT_ADDR = os.getenv("CONTRACT_ADDRESS", "")
-CHAIN_ID      = int(os.getenv("CHAIN_ID", "1337"))   # 1337 = local Hardhat/Ganache
+CHAIN_ID      = int(os.getenv("CHAIN_ID", "1337"))
 GAS_LIMIT     = 300_000
 GAS_PRICE_GWEI = 20
 
+REGISTRY_ADDR       = os.getenv("PATIENT_REGISTRY_ADDRESS", "")
+ACCESS_CONTROL_ADDR = os.getenv("ACCESS_CONTROL_ADDRESS", "")
+HEALTH_RECORDS_ADDR = os.getenv("HEALTH_RECORDS_ADDRESS", "")
 
-# ─────────────────────────── Client ─────────────────────────────────
+ABI_DIR = os.path.join(os.path.dirname(__file__), "..", "contracts", "abi")
+
 
 class BlockchainClient:
     def __init__(self):
@@ -31,18 +31,21 @@ class BlockchainClient:
         if not self.w3.is_connected():
             raise ConnectionError(f"Cannot connect to node at {PROVIDER_URL}")
 
-        with open(ABI_PATH) as f:
-            abi = json.load(f)
+        with open(os.path.join(ABI_DIR, "PatientRegistry.json")) as f:
+            registry_abi = json.load(f)
+        with open(os.path.join(ABI_DIR, "AccessControl.json")) as f:
+            access_abi = json.load(f)
+        with open(os.path.join(ABI_DIR, "HealthRecords.json")) as f:
+            records_abi = json.load(f)
 
-        self.contract = self.w3.eth.contract(
-            address=Web3.to_checksum_address(CONTRACT_ADDR),
-            abi=abi,
-        )
-
-    # ─────────────── Helpers ─────────────────────────────────────────
+        self.registry = self.w3.eth.contract(
+            address=Web3.to_checksum_address(REGISTRY_ADDR), abi=registry_abi)
+        self.access = self.w3.eth.contract(
+            address=Web3.to_checksum_address(ACCESS_CONTROL_ADDR), abi=access_abi)
+        self.records = self.w3.eth.contract(
+            address=Web3.to_checksum_address(HEALTH_RECORDS_ADDR), abi=records_abi)
 
     def _send_tx(self, fn, sender: str, private_key: str) -> dict:
-        """Build, sign, and broadcast a transaction; return the receipt."""
         nonce = self.w3.eth.get_transaction_count(Web3.to_checksum_address(sender))
         tx = fn.build_transaction({
             "from":     Web3.to_checksum_address(sender),
@@ -62,7 +65,6 @@ class BlockchainClient:
 
     @staticmethod
     def _fmt_records(raw: list) -> list:
-        """Convert raw tuple list from contract into dicts."""
         return [
             {
                 "ipfs_hash":   r[1],
@@ -73,78 +75,82 @@ class BlockchainClient:
             for r in raw
         ]
 
-    # ─────────────── Registration ────────────────────────────────────
+    # ── Registration (PatientRegistry) ───────────────────────────────
 
     def register_patient(self, account: str, private_key: str) -> dict:
-        fn = self.contract.functions.registerPatient()
+        fn = self.registry.functions.registerPatient()
         return self._send_tx(fn, account, private_key)
 
     def register_doctor(self, doctor_address: str, admin_account: str, admin_key: str) -> dict:
-        fn = self.contract.functions.registerDoctor(
-            Web3.to_checksum_address(doctor_address)
-        )
+        fn = self.registry.functions.registerDoctor(Web3.to_checksum_address(doctor_address))
         return self._send_tx(fn, admin_account, admin_key)
 
     def register_emergency(self, person_address: str, admin_account: str, admin_key: str) -> dict:
-        fn = self.contract.functions.registerEmergencyPersonnel(
-            Web3.to_checksum_address(person_address)
-        )
+        fn = self.registry.functions.registerEmergencyPersonnel(Web3.to_checksum_address(person_address))
         return self._send_tx(fn, admin_account, admin_key)
 
-    # ─────────────── Records ─────────────────────────────────────────
+    def is_doctor(self, address: str) -> bool:
+        return self.registry.functions.doctors(Web3.to_checksum_address(address)).call()
+
+    def is_patient(self, address: str) -> bool:
+        return self.registry.functions.registeredPatients(Web3.to_checksum_address(address)).call()
+
+    def is_emergency(self, address: str) -> bool:
+        return self.registry.functions.emergencyPersonnel(Web3.to_checksum_address(address)).call()
+
+    def get_admin(self) -> str:
+        return self.registry.functions.admin().call()
+
+    # ── Records (HealthRecords) ───────────────────────────────────────
 
     def add_record(self, patient: str, ipfs_hash: str, record_type: str,
                    caller: str, private_key: str) -> dict:
         record_type_map = {
-            "Lab Result": 0,
+            "Lab Result": 3,
             "Prescription": 1,
-            "Consultation Notes": 2,
-            "Imaging": 3,
-            "Vaccination": 4,
+            "Consultation Notes": 0,
+            "Imaging": 2,
+            "Vaccination": 0,
         }
-        fn = self.contract.functions.addRecord(
+        fn = self.records.functions.addRecord(
             Web3.to_checksum_address(patient),
             ipfs_hash,
-            bytes(ipfs_hash[:32].ljust(32).encode("utf-8")),
+            bytes(32),
             int(record_type_map.get(record_type, 0)),
         )
         return self._send_tx(fn, caller, private_key)
 
     def get_records(self, patient: str, caller: str) -> list:
-        raw = self.contract.functions.getRecords(
+        raw = self.records.functions.getRecords(
             Web3.to_checksum_address(patient)
         ).call({"from": Web3.to_checksum_address(caller)})
         return self._fmt_records(raw)
 
     def get_record_count(self, patient: str) -> int:
-        return self.contract.functions.getRecordCount(
+        return self.records.functions.getRecordCount(
             Web3.to_checksum_address(patient)
         ).call()
 
-    # ─────────────── Consent ─────────────────────────────────────────
+    # ── Consent (AccessControl) ───────────────────────────────────────
 
     def grant_consent(self, doctor: str, duration_seconds: int,
                       patient: str, private_key: str) -> dict:
-        fn = self.contract.functions.grantConsent(
-            Web3.to_checksum_address(doctor),
-            duration_seconds,
-        )
+        fn = self.access.functions.grantConsent(
+            Web3.to_checksum_address(doctor), duration_seconds)
         return self._send_tx(fn, patient, private_key)
 
     def revoke_consent(self, doctor: str, patient: str, private_key: str) -> dict:
-        fn = self.contract.functions.revokeConsent(
-            Web3.to_checksum_address(doctor)
-        )
+        fn = self.access.functions.revokeConsent(Web3.to_checksum_address(doctor))
         return self._send_tx(fn, patient, private_key)
 
     def has_valid_consent(self, patient: str, doctor: str) -> bool:
-        return self.contract.functions.hasValidConsent(
+        return self.access.functions.hasValidConsent(
             Web3.to_checksum_address(patient),
             Web3.to_checksum_address(doctor),
         ).call()
 
     def get_consent_expiry(self, patient: str, doctor: str):
-        ts = self.contract.functions.getConsentExpiry(
+        ts = self.access.functions.getConsentExpiry(
             Web3.to_checksum_address(patient),
             Web3.to_checksum_address(doctor),
         ).call()
@@ -152,21 +158,19 @@ class BlockchainClient:
             return None
         return datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d %H:%M UTC")
 
-    # ─────────────── Emergency Override ──────────────────────────────
+    # ── Emergency (AccessControl) ─────────────────────────────────────
 
     def emergency_access(self, patient: str, reason: str,
                          caller: str, private_key: str) -> dict:
-        fn = self.contract.functions.emergencyAccess(
-            Web3.to_checksum_address(patient),
-            reason,
-        )
+        fn = self.access.functions.emergencyAccess(
+            Web3.to_checksum_address(patient), reason)
         return self._send_tx(fn, caller, private_key)
 
     def get_emergency_log(self, admin_account: str) -> list:
-        count = self.contract.functions.totalEmergencyEvents().call()
+        count = self.access.functions.totalEmergencyEvents().call()
         raw = []
         for i in range(1, count + 1):
-            raw.append(self.contract.functions.emergencyEvents(i).call())
+            raw.append(self.access.functions.emergencyEvents(i).call())
         return [
             {
                 "accessor":  entry[1],
@@ -176,23 +180,3 @@ class BlockchainClient:
             }
             for entry in raw
         ]
-
-    # ─────────────── Checks ──────────────────────────────────────────
-
-    def is_doctor(self, address: str) -> bool:
-        return self.contract.functions.doctors(
-            Web3.to_checksum_address(address)
-        ).call()
-
-    def is_patient(self, address: str) -> bool:
-        return self.contract.functions.registeredPatients(
-            Web3.to_checksum_address(address)
-        ).call()
-
-    def is_emergency(self, address: str) -> bool:
-        return self.contract.functions.emergencyPersonnel(
-            Web3.to_checksum_address(address)
-        ).call()
-
-    def get_admin(self) -> str:
-        return self.contract.functions.admin().call()
