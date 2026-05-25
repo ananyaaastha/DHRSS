@@ -163,15 +163,16 @@ class BlockchainClient:
         return self._send_tx(fn, caller, private_key)
 
     def get_emergency_log(self, admin_account: str) -> list:
-        raw = self.contract.functions.getEmergencyLog().call(
-            {"from": Web3.to_checksum_address(admin_account)}
-        )
+        count = self.contract.functions.totalEmergencyEvents().call()
+        raw = []
+        for i in range(1, count + 1):
+            raw.append(self.contract.functions.emergencyEvents(i).call())
         return [
             {
-                "accessor":  entry[0],
-                "patient":   entry[1],
-                "timestamp": datetime.utcfromtimestamp(entry[2]).strftime("%Y-%m-%d %H:%M UTC"),
-                "reason":    entry[3],
+                "accessor":  entry[1],
+                "patient":   entry[2],
+                "timestamp": datetime.utcfromtimestamp(int(entry[3])).strftime("%Y-%m-%d %H:%M UTC"),
+                "reason":    entry[5],
             }
             for entry in raw
         ]
