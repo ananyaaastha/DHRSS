@@ -16,7 +16,7 @@ load_dotenv()
 # ─────────────────────────── Config ─────────────────────────────────
 
 ABI_PATH      = os.path.join(os.path.dirname(__file__), "..", "contracts", "abi", "HealthRecords.json")
-PROVIDER_URL  = os.getenv("WEB3_PROVIDER_URL", "http://127.0.0.1:8545")
+PROVIDER_URL  = os.getenv("WEB3_PROVIDER_URL", "http://127.0.0.1:7545")
 CONTRACT_ADDR = os.getenv("CONTRACT_ADDRESS", "")
 CHAIN_ID      = int(os.getenv("CHAIN_ID", "1337"))   # 1337 = local Hardhat/Ganache
 GAS_LIMIT     = 300_000
@@ -52,7 +52,7 @@ class BlockchainClient:
             "chainId":  CHAIN_ID,
         })
         signed  = self.w3.eth.account.sign_transaction(tx, private_key)
-        tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+        tx_hash = self.w3.eth.send_raw_transaction(signed.rawTransaction)
         receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
         return {
             "tx_hash": receipt.transactionHash.hex(),
@@ -65,10 +65,10 @@ class BlockchainClient:
         """Convert raw tuple list from contract into dicts."""
         return [
             {
-                "ipfs_hash":   r[0],
-                "timestamp":   datetime.utcfromtimestamp(r[1]).strftime("%Y-%m-%d %H:%M UTC"),
-                "added_by":    r[2],
-                "record_type": r[3],
+                "ipfs_hash":   r[1],
+                "timestamp":   datetime.utcfromtimestamp(int(r[3])).strftime("%Y-%m-%d %H:%M UTC"),
+                "added_by":    r[4],
+                "record_type": str(r[5]),
             }
             for r in raw
         ]
@@ -95,10 +95,18 @@ class BlockchainClient:
 
     def add_record(self, patient: str, ipfs_hash: str, record_type: str,
                    caller: str, private_key: str) -> dict:
+        record_type_map = {
+            "Lab Result": 0,
+            "Prescription": 1,
+            "Consultation Notes": 2,
+            "Imaging": 3,
+            "Vaccination": 4,
+        }
         fn = self.contract.functions.addRecord(
             Web3.to_checksum_address(patient),
             ipfs_hash,
-            record_type,
+            bytes(ipfs_hash[:32].ljust(32).encode("utf-8")),
+            int(record_type_map.get(record_type, 0)),
         )
         return self._send_tx(fn, caller, private_key)
 

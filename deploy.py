@@ -21,7 +21,7 @@ load_dotenv()
 SOLC_VERSION  = "0.8.19"
 CONTRACT_FILE = "contracts/HealthRecords.sol"
 ABI_OUTPUT    = "contracts/abi/HealthRecords.json"
-PROVIDER_URL  = os.getenv("WEB3_PROVIDER_URL", "http://127.0.0.1:8545")
+PROVIDER_URL  = os.getenv("WEB3_PROVIDER_URL", "http://127.0.0.1:7545")
 DEPLOYER_ADDR = os.getenv("DEPLOYER_ADDRESS")
 DEPLOYER_KEY  = os.getenv("DEPLOYER_PRIVATE_KEY")
 CHAIN_ID      = int(os.getenv("CHAIN_ID", "1337"))
@@ -78,7 +78,7 @@ def main():
     })
 
     signed  = w3.eth.account.sign_transaction(tx, DEPLOYER_KEY)
-    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
     address = receipt.contractAddress
