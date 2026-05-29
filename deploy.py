@@ -1,13 +1,10 @@
 """
-deploy.py — Compile and deploy the HealthRecords contract.
-
+deploy.py — Legacy single-contract deployment script.
+Note: The project now uses 3 contracts (PatientRegistry, AccessControl, HealthRecords)
+deployed manually via Remix IDE with optimizer enabled.
+See README.md for full deployment instructions.
 Requirements:
   pip install web3 py-solc-x python-dotenv
-
-Usage:
-  1. Start a local Hardhat/Ganache node
-  2. Copy .env.example to .env and fill in values
-  3. python deploy.py
 """
 
 import json
