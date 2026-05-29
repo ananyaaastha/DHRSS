@@ -527,13 +527,140 @@
 			}
 		],
 		"devdoc": {
+			"author": "Ananya Aastha — N12125547 | IFB452 Blockchain Technology, QUT",
+			"details": "NOVEL features vs MedRec (Azaria et al., 2016):   1. Auto-expiry consent — permissions revoke automatically at block.timestamp      No patient action needed — the contract enforces expiry automatically   2. Emergency override with penalty mechanism      Every access is permanently logged. Unjustified access = strike.      Three strikes = automatic suspension from the network.Cross-contract interaction:   This contract calls PatientRegistry to verify roles before   granting or revoking consent and before allowing emergency access.",
+			"events": {
+				"PatientAlerted(address,address,uint256,uint256)": {
+					"details": "NOVEL — patient is immediately alerted on-chain when emergency access occurs"
+				},
+				"ProviderPenalised(address,uint256,bool,uint256)": {
+					"details": "NOVEL — emitted when emergency personnel receive a penalty strike"
+				}
+			},
 			"kind": "dev",
-			"methods": {},
+			"methods": {
+				"constructor": {
+					"params": {
+						"_registryAddress": "Address of the deployed PatientRegistry contract"
+					}
+				},
+				"emergencyAccess(address,string)": {
+					"details": "Calls PatientRegistry to verify caller is registered emergency personnel      and that the patient is registered. Issues a 4-hour read-only token.      Patient is immediately alerted on-chain via PatientAlerted event.      Every access is permanently logged — records can never be deleted.",
+					"params": {
+						"_patient": "Patient wallet address whose records are being accessed",
+						"_reason": "Clinical justification — stored permanently on-chain"
+					}
+				},
+				"grantConsent(address,uint256)": {
+					"details": "Calls PatientRegistry to verify caller is a registered patient      and that the provider is a registered doctor/pharmacist/insurer.      Consent auto-expires at block.timestamp >= expiryTime — no patient action needed.",
+					"params": {
+						"_durationSec": "Duration in seconds (e.g. 86400 = 1 day, 3600 = 1 hour)",
+						"_provider": "Provider wallet address to grant access to"
+					}
+				},
+				"hasValidConsent(address,address)": {
+					"details": "Called by HealthRecords before returning patient data      NOVEL — checks both active flag AND timestamp expiry",
+					"params": {
+						"_patient": "Patient wallet address",
+						"_provider": "Provider wallet address"
+					},
+					"returns": {
+						"_0": "true if consent is active and not yet expired"
+					}
+				},
+				"reviewAccess(uint256,bool,string)": {
+					"details": "If unjustified, _penalisePersonnel is called automatically.      Three unjustified accesses = automatic suspension.",
+					"params": {
+						"_eventId": "The emergency event ID to review",
+						"_isJustified": "Whether the access was clinically justified",
+						"_note": "Reviewer's note explaining the decision"
+					}
+				},
+				"revokeConsent(address)": {
+					"details": "Calls PatientRegistry to verify caller is a registered patient",
+					"params": {
+						"_provider": "Provider wallet address to revoke access from"
+					}
+				}
+			},
+			"stateVariables": {
+				"consents": {
+					"details": "NOVEL — auto-expiry checked at call time, no cron job needed"
+				}
+			},
+			"title": "AccessControl",
 			"version": 1
 		},
 		"userdoc": {
+			"events": {
+				"AccessReviewed(uint256,bool,string,uint256)": {
+					"notice": "Emitted when admin reviews an emergency access event"
+				},
+				"ConsentGranted(address,address,uint256)": {
+					"notice": "Emitted when a patient grants time-limited consent to a provider"
+				},
+				"ConsentRevoked(address,address,uint256)": {
+					"notice": "Emitted when a patient manually revokes consent before expiry"
+				},
+				"EmergencyOverride(address,address,uint256,string,uint256)": {
+					"notice": "Emitted when emergency personnel access records without consent"
+				}
+			},
 			"kind": "user",
-			"methods": {},
+			"methods": {
+				"EMERGENCY_DURATION()": {
+					"notice": "Emergency access token lasts 4 hours — read-only window"
+				},
+				"MAX_STRIKES()": {
+					"notice": "Three unjustified accesses triggers automatic suspension"
+				},
+				"admin()": {
+					"notice": "Address of the contract deployer — has admin privileges"
+				},
+				"constructor": {
+					"notice": "Sets admin and links to the deployed PatientRegistry contract"
+				},
+				"credentials(address)": {
+					"notice": "Penalty record for each emergency personnel address"
+				},
+				"emergencyAccess(address,string)": {
+					"notice": "NOVEL — Emergency personnel access records without prior consent"
+				},
+				"emergencyEvents(uint256)": {
+					"notice": "Permanent registry of all emergency events — immutable audit trail"
+				},
+				"getConsentExpiry(address,address)": {
+					"notice": "Returns the expiry timestamp for a provider's consent (0 if none)"
+				},
+				"getCredential(address)": {
+					"notice": "Returns penalty info for emergency personnel"
+				},
+				"getEmergencyLogCount()": {
+					"notice": "Returns total number of emergency events ever logged"
+				},
+				"grantConsent(address,uint256)": {
+					"notice": "NOVEL — Grant time-limited consent to a provider"
+				},
+				"hasValidConsent(address,address)": {
+					"notice": "Check if a provider currently has valid non-expired consent"
+				},
+				"patientEmergencyLog(address,uint256)": {
+					"notice": "patient => list of emergency event IDs affecting them"
+				},
+				"registry()": {
+					"notice": "Reference to PatientRegistry for cross-contract role verification"
+				},
+				"reviewAccess(uint256,bool,string)": {
+					"notice": "NOVEL — Governance review of an emergency access event"
+				},
+				"revokeConsent(address)": {
+					"notice": "Manually revoke a provider's consent before expiry"
+				},
+				"totalEmergencyEvents()": {
+					"notice": "Total number of emergency events ever logged"
+				}
+			},
+			"notice": "Contract 2 of 3 — Consent and Emergency Access Management         Manages time-limited consent grants between patients and providers.         Handles emergency override with permanent on-chain logging.         Called by HealthRecords before returning any patient data.",
 			"version": 1
 		}
 	},
@@ -554,19 +681,19 @@
 	},
 	"sources": {
 		"contracts/AccessControl.sol": {
-			"keccak256": "0xd029e60677d85cd561883c72cea203bb0926c4c5bd035acbe01898c88150bc39",
+			"keccak256": "0xbe94547afd65bc31b3e1a10ebc30efa56e4c2c31f405130175cda72d68c9d518",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://34cbe71bcdf3b409d1ad35a0027022a9ffd7c6fc8c423c259c4598184ed5d9eb",
-				"dweb:/ipfs/QmdVmxmfL9dKWDbFTEiDqNW5mB7qf2fWjmATA5uzRTVuZX"
+				"bzz-raw://0d732099d44338a088b4c6cca8ead0ca794bba6c1cdf709d3e6157f74407ba77",
+				"dweb:/ipfs/QmezyL7JGmqDbnkoN8mX86jq6p9EAMkFtdSeVdYy9JNpHE"
 			]
 		},
 		"contracts/PatientRegistry.sol": {
-			"keccak256": "0x944037c68025a2e337b23706c021702c821731e457b5017adbf0aef5e5c03a68",
+			"keccak256": "0x3e9a654ce4ac0a2ce96b6bbab485cc2d62b575be41b59d3cc1c57a71fc232b9d",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://6ade7fbbe83ba7b6b0163b654545bb7f43f8475967b472fc9cdc498d502cd0eb",
-				"dweb:/ipfs/QmT9x5TjMFQG39vFYzgCEccrgw7x3kqEY35Fj7D1acT6rK"
+				"bzz-raw://39632881d58ec00fa3bbafb80b77e80d2a877aa11b630bf07445165259e02e49",
+				"dweb:/ipfs/QmSZiv9B9WwMSDqXdGjCKUwuty833UA5z8qCfUYB1sKSf6"
 			]
 		}
 	},

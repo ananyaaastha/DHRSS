@@ -215,13 +215,80 @@
 			}
 		],
 		"devdoc": {
+			"author": "Ananya Aastha — N12125547 | IFB452 Blockchain Technology, QUT",
+			"details": "Cross-contract interactions:   This contract calls PatientRegistry to verify stakeholder roles.   This contract calls AccessControl to verify consent before returning data.   This demonstrates direct smart contract interaction as required by the spec.Architecture:   PatientRegistry  ←── HealthRecords ──→  AccessControl        ↑                                        ↑   role checks                          consent checks",
 			"kind": "dev",
-			"methods": {},
+			"methods": {
+				"addRecord(address,string,bytes32,uint8)": {
+					"details": "Calls PatientRegistry to verify patient is registered.      Calls AccessControl to verify consent for doctors and pharmacists.      Only the IPFS hash is stored — raw data lives off-chain on IPFS.",
+					"params": {
+						"_fileHash": "keccak256 hash of the file for integrity verification",
+						"_ipfsHash": "IPFS CID of the encrypted medical file",
+						"_patient": "Patient wallet address",
+						"_recordType": "Type of medical record being added"
+					}
+				},
+				"constructor": {
+					"params": {
+						"_accessControlAddress": "Address of the deployed AccessControl contract",
+						"_registryAddress": "Address of the deployed PatientRegistry contract"
+					}
+				},
+				"getRecordCount(address)": {
+					"params": {
+						"_patient": "Patient wallet address"
+					},
+					"returns": {
+						"_0": "Number of records stored for this patient"
+					}
+				},
+				"getRecords(address)": {
+					"details": "Calls PatientRegistry to verify roles.      Calls AccessControl to verify consent for doctors/pharmacists/insurers.      Emergency personnel can access without consent — audit log in AccessControl.",
+					"params": {
+						"_patient": "Patient wallet address whose records to retrieve"
+					},
+					"returns": {
+						"_0": "Array of Record structs belonging to the patient"
+					}
+				}
+			},
+			"title": "HealthRecords",
 			"version": 1
 		},
 		"userdoc": {
+			"events": {
+				"RecordAdded(address,uint256,uint8,address,uint256)": {
+					"notice": "Emitted when a new health record is added for a patient"
+				}
+			},
 			"kind": "user",
-			"methods": {},
+			"methods": {
+				"accessControl()": {
+					"notice": "Reference to AccessControl for cross-contract consent verification"
+				},
+				"addRecord(address,string,bytes32,uint8)": {
+					"notice": "Add a health record for a patient"
+				},
+				"admin()": {
+					"notice": "Address of the contract deployer — has admin privileges"
+				},
+				"constructor": {
+					"notice": "Links this contract to the other two deployed contracts"
+				},
+				"getRecordCount(address)": {
+					"notice": "Returns the total number of records for a patient"
+				},
+				"getRecords(address)": {
+					"notice": "Retrieve all health records for a patient"
+				},
+				"registry()": {
+					"notice": "Reference to PatientRegistry for cross-contract role verification"
+				},
+				"totalRecords()": {
+					"notice": "Total number of records ever added across all patients"
+				}
+			},
+			"notice": "Contract 3 of 3 — Health Record Storage and Retrieval         Stores IPFS hashes of encrypted medical records on-chain.         Raw medical data is stored off-chain on IPFS — only the CID         and a keccak256 integrity hash are stored on-chain.",
 			"version": 1
 		}
 	},
@@ -242,27 +309,27 @@
 	},
 	"sources": {
 		"contracts/AccessControl.sol": {
-			"keccak256": "0xd029e60677d85cd561883c72cea203bb0926c4c5bd035acbe01898c88150bc39",
+			"keccak256": "0xbe94547afd65bc31b3e1a10ebc30efa56e4c2c31f405130175cda72d68c9d518",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://34cbe71bcdf3b409d1ad35a0027022a9ffd7c6fc8c423c259c4598184ed5d9eb",
-				"dweb:/ipfs/QmdVmxmfL9dKWDbFTEiDqNW5mB7qf2fWjmATA5uzRTVuZX"
+				"bzz-raw://0d732099d44338a088b4c6cca8ead0ca794bba6c1cdf709d3e6157f74407ba77",
+				"dweb:/ipfs/QmezyL7JGmqDbnkoN8mX86jq6p9EAMkFtdSeVdYy9JNpHE"
 			]
 		},
 		"contracts/HealthRecords.sol": {
-			"keccak256": "0xd73db8d91d84f8ee86d3e15ccc7c36cfcb3a4d12086ff35728aaafba350b1858",
+			"keccak256": "0xbc7e58353f6aa720ee8d79fc58e5de1016b5eecfa687f5fc7406a7d86627d405",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://9296a2cad6f252cb75ede92c12c2d1f38ac92e2f72c80893c824e3137092c7ce",
-				"dweb:/ipfs/QmbrmHLX8i7EfZYvyVKkYrPbHWZTDicEuKLaMGmB4VbGxz"
+				"bzz-raw://67d1e1edb306ece8dc4da508c1ec9697df651511f94b14f94613213e8865aecd",
+				"dweb:/ipfs/QmZCxvAyUa7tZF2fo3xwPhTNgYtWJsQCDqu8xxTiCJzuQk"
 			]
 		},
 		"contracts/PatientRegistry.sol": {
-			"keccak256": "0x944037c68025a2e337b23706c021702c821731e457b5017adbf0aef5e5c03a68",
+			"keccak256": "0x3e9a654ce4ac0a2ce96b6bbab485cc2d62b575be41b59d3cc1c57a71fc232b9d",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://6ade7fbbe83ba7b6b0163b654545bb7f43f8475967b472fc9cdc498d502cd0eb",
-				"dweb:/ipfs/QmT9x5TjMFQG39vFYzgCEccrgw7x3kqEY35Fj7D1acT6rK"
+				"bzz-raw://39632881d58ec00fa3bbafb80b77e80d2a877aa11b630bf07445165259e02e49",
+				"dweb:/ipfs/QmSZiv9B9WwMSDqXdGjCKUwuty833UA5z8qCfUYB1sKSf6"
 			]
 		}
 	},
